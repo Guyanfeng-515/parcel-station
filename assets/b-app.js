@@ -1,4 +1,4 @@
-﻿/* ===========================================================
+/* ===========================================================
    社区快递驿站 · 实时监测平台  B 端管理台逻辑 (b-app.js)
    =========================================================== */
 (function () {
@@ -992,31 +992,29 @@
       ev.level === 'high' ? 'bad' : 'warn');
   });
 
-  /* 收到服务端状态即渲染 */
-  SIM.on('state', function () {
+  /* 静态版：内核每秒 emit 'tick'，据此驱动渲染 */
+  SIM.on('tick', function () {
     render();
   });
 
-  /* 连接状态变化 */
-  SIM.on('status', function (st) {
-    updateConn(st);
-  });
-
-  SIM.on('hello', function (msg) {
-    if (msg.hardwareMode) {
-      $('demoHint').textContent = '⚡ 真实硬件模式';
-    }
-  });
-
-  function updateConn(st) {
-    var online = st.connected;
+  /* 静态版：无后端，显示"本地运行"并标出跨标签页同步状态 */
+  (function () {
     var badge = $('connBadge');
-    if (badge) {
-      badge.className = 'chip ' + (online ? '' : 'bad');
-      badge.innerHTML = '<span class="pulse' + (online ? '' : ' off') + '"></span>' +
-        (online ? '实时连接' : (st.reconnecting ? '重连中…' : '已断开'));
-    }
-  }
+    if (!badge) return;
+    badge.className = 'chip';
+    badge.innerHTML = '<span class="pulse"></span>本地运行';
+    badge.title = '静态部署：数据在浏览器内仿真，同一浏览器的 B/C 端通过 BroadcastChannel 同步设备状态';
+
+    // 收到其他标签页的同步时，短暂提示
+    var syncTip = null;
+    SIM.on('remote', function () {
+      badge.innerHTML = '<span class="pulse"></span>已同步';
+      clearTimeout(syncTip);
+      syncTip = setTimeout(function () {
+        badge.innerHTML = '<span class="pulse"></span>本地运行';
+      }, 1600);
+    });
+  })();
 
   // 视图首次进入时初始化表单
   var initedCfg = false;
